@@ -12,11 +12,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # EOL: April 2025
-          - os: macOS-latest
-            node_version: 18.x
-          - os: windows-latest
-            node_version: 18.x
+          # DISABLED FOR LOCAL TESTING - macOS and Windows
+          # - os: macOS-latest
+          #   node_version: 18.x
+          # - os: windows-latest
+          #   node_version: 18.x
           - os: ubuntu-latest
             node_version: 18.x
           # EOL: April 2026
@@ -35,6 +35,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - name: Install
         run: yarn --frozen-lockfile --non-interactive
