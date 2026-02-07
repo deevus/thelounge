@@ -1097,7 +1097,7 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 		}
 	}
 
-	if (Config.values.openid.enable) {
+	if (Config.values.openid.enable && "password" in data) {
 		try {
 			const tokenSet = await openidClient.callback(
 				Config.values.openid.baseURL,
