@@ -6,12 +6,12 @@ Improve error handling in the OpenID authentication flow by adding detailed serv
 
 ## Error Categories
 
-| Error Type | Source | Log Message Pattern |
-|------------|--------|---------------------|
-| `OPError` | Provider returned error | `OpenID provider error: ${error} (${error_description})` |
-| `RPError` | Token/state validation failed | `OpenID validation error: ${message}` |
-| Network error | Provider unreachable | `OpenID provider unreachable: ${code}` |
-| Role authorization | Missing required roles | `OpenID user lacks required roles: has [${has}], needs [${needs}]` |
+| Error Type         | Source                        | Log Message Pattern                                                |
+| ------------------ | ----------------------------- | ------------------------------------------------------------------ |
+| `OPError`          | Provider returned error       | `OpenID provider error: ${error} (${error_description})`           |
+| `RPError`          | Token/state validation failed | `OpenID validation error: ${message}`                              |
+| Network error      | Provider unreachable          | `OpenID provider unreachable: ${code}`                             |
+| Role authorization | Missing required roles        | `OpenID user lacks required roles: has [${has}], needs [${needs}]` |
 
 ## Implementation
 
