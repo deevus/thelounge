@@ -110,20 +110,29 @@ export default async function (
 		.use(express.static(Utils.getFileFromRelativeToRoot("public"), staticOptions))
 		.use("/storage/", express.static(Config.getStoragePath(), staticOptions));
 
-	issuer = await Issuer.discover(Config.values.openid.issuerURL);
-	log.info("Discovered OpenID issuer", issuer.metadata.issuer);
-	openidClient = new issuer.Client({
-		client_id: Config.values.openid.clientID,
-		client_secret: Config.values.openid.secret,
-		redirect_uris: [Config.values.openid.baseURL],
-		response_types: ["code"],
-	});
-	const redirectUrl = openidClient.authorizationUrl({
-		scope: "openid email profile",
-		code_challenge,
-		code_challenge_method: "S256",
-	});
-	issuerURL = redirectUrl;
+	if (Config.values.openid.enable) {
+		try {
+			issuer = await Issuer.discover(Config.values.openid.issuerURL);
+			log.info("Discovered OpenID issuer", issuer.metadata.issuer);
+			openidClient = new issuer.Client({
+				client_id: Config.values.openid.clientID,
+				client_secret: Config.values.openid.secret,
+				redirect_uris: [Config.values.openid.baseURL],
+				response_types: ["code"],
+			});
+			const redirectUrl = openidClient.authorizationUrl({
+				scope: "openid email profile",
+				code_challenge,
+				code_challenge_method: "S256",
+			});
+			issuerURL = redirectUrl;
+		} catch (err) {
+			log.error(`Failed to initialize OpenID: ${(err as Error).message}`);
+			log.error("OpenID authentication will not be available");
+		}
+	} else {
+		log.info("OpenID authentication is disabled");
+	}
 
 	if (Config.values.fileUpload.enable) {
 		Uploader.router(app);
