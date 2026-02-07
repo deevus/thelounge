@@ -1,5 +1,7 @@
 # OpenID Authentication Error Handling
 
+**Status:** Implemented
+
 ## Overview
 
 Improve error handling in the OpenID authentication flow by adding detailed server-side logging for different error types. Follows TheLounge's existing idiom of detailed server logs with generic client messages.
