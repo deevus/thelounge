@@ -1116,6 +1116,13 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 				);
 
 				if (!userAuthorized) {
+					log.warn(
+						`OpenID user ${colors.bold(data.user)} from ${colors.bold(
+							getClientIp(socket)
+						)} lacks required roles: has [${availabeRoles.join(
+							", "
+						)}], needs [${requiredRoles.join(", ")}]`
+					);
 					data.user = "";
 					data.password = "";
 				}
