@@ -844,7 +844,6 @@ function initializeClient(
 	}
 
 	socket.on("sign-out", (tokenToSignOut) => {
-		// TODO: Add OpenID hook
 		// If no token provided, sign same client out
 		if (!tokenToSignOut || typeof tokenToSignOut !== "string") {
 			tokenToSignOut = token;
@@ -852,6 +851,23 @@ function initializeClient(
 
 		if (!Object.prototype.hasOwnProperty.call(client.config.sessions, tokenToSignOut)) {
 			return;
+		}
+
+		// Check if this is the current session signing out and OpenID logout is enabled
+		let logoutUrl: string | undefined;
+
+		if (
+			tokenToSignOut === token &&
+			Config.values.openid.enable &&
+			Config.values.openid.logout &&
+			issuer?.metadata?.end_session_endpoint
+		) {
+			const idToken = client.config.sessions[tokenToSignOut].idToken;
+			const endSessionEndpoint = issuer.metadata.end_session_endpoint as string;
+
+			logoutUrl = idToken
+				? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+				: endSessionEndpoint;
 		}
 
 		delete client.config.sessions[tokenToSignOut];
@@ -865,7 +881,7 @@ function initializeClient(
 
 			const socketToRemove = manager!.sockets.of("/").sockets.get(socketId);
 
-			socketToRemove!.emit("sign-out");
+			socketToRemove!.emit("sign-out", logoutUrl ? {logoutUrl} : undefined);
 			socketToRemove!.disconnect();
 		});
 

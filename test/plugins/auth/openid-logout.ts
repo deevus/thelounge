@@ -1,5 +1,6 @@
 import {expect} from "chai";
 import type {UserConfig} from "../../../server/client";
+import Config from "../../../server/config";
 
 describe("OpenID front-channel logout", function () {
 	describe("idToken storage during authentication", function () {
@@ -89,6 +90,61 @@ describe("OpenID front-channel logout", function () {
 			expect(withUrl?.logoutUrl).to.equal("https://auth.example.com/logout");
 			expect(withoutUrl).to.be.undefined;
 			expect(emptyPayload?.logoutUrl).to.be.undefined;
+		});
+	});
+
+	describe("Logout URL construction", function () {
+		let originalOpenidEnable: boolean;
+		let originalOpenidLogout: boolean;
+
+		beforeEach(function () {
+			originalOpenidEnable = Config.values.openid.enable;
+			originalOpenidLogout = Config.values.openid.logout;
+		});
+
+		afterEach(function () {
+			Config.values.openid.enable = originalOpenidEnable;
+			Config.values.openid.logout = originalOpenidLogout;
+		});
+
+		it("should construct logout URL with id_token_hint when all conditions met", function () {
+			const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
+			const idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test";
+
+			const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
+
+			expect(logoutUrl).to.equal(
+				"https://auth.example.com/oauth2/logout?id_token_hint=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test"
+			);
+		});
+
+		it("should construct logout URL without id_token_hint when idToken missing", function () {
+			const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
+			const idToken = undefined;
+
+			const logoutUrl = idToken
+				? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+				: endSessionEndpoint;
+
+			expect(logoutUrl).to.equal("https://auth.example.com/oauth2/logout");
+		});
+
+		it("should return undefined when logout config is false", function () {
+			Config.values.openid.enable = true;
+			Config.values.openid.logout = false;
+
+			const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
+
+			expect(shouldBuildLogoutUrl).to.be.false;
+		});
+
+		it("should return undefined when openid is disabled", function () {
+			Config.values.openid.enable = false;
+			Config.values.openid.logout = true;
+
+			const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
+
+			expect(shouldBuildLogoutUrl).to.be.false;
 		});
 	});
 });
