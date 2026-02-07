@@ -76,6 +76,8 @@ let openidClient: BaseClient;
 
 let issuerURL: string;
 
+let pendingIdToken: string | undefined;
+
 let manager: ClientManager | null = null;
 
 export default async function (
@@ -1130,6 +1132,9 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 					data.password = "";
 				}
 			}
+
+			// Store id_token for front-channel logout
+			pendingIdToken = tokenSet.id_token;
 		} catch (e) {
 			const clientIp = colors.bold(getClientIp(socket));
 
