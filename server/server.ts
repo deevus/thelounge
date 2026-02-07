@@ -68,6 +68,7 @@ const serverHash = Math.floor(Date.now() * Math.random());
 // OpenID code generators and verifiers
 const code_verifier = generators.codeVerifier();
 const code_challenge = generators.codeChallenge(code_verifier);
+const state = generators.state();
 
 let issuer: Issuer;
 
@@ -124,6 +125,7 @@ export default async function (
 				scope: "openid email profile",
 				code_challenge,
 				code_challenge_method: "S256",
+				state,
 			});
 			issuerURL = redirectUrl;
 		} catch (err) {
@@ -1102,10 +1104,11 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 			const tokenSet = await openidClient.callback(
 				Config.values.openid.baseURL,
 				openidClient.callbackParams(data.password as string),
-				{code_verifier}
+				{code_verifier, state}
 			);
+
 			const userinfo = await openidClient.userinfo(tokenSet);
-			log.info(JSON.stringify(userinfo));
+
 			data.user = userinfo[Config.values.openid.usernameClaim] as string;
 
 			if (Config.values.openid.roleClaim !== "") {

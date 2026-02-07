@@ -16,8 +16,8 @@ function openIDAuth(
 		return;
 	}
 
-	// If no user is found, create it
-	if (!existingUser) {
+	// If no user is found, create it (unless they already exist on disk)
+	if (!existingUser && !manager.getUsers().includes(user)) {
 		manager.addUser(user, null, true);
 	}
 
