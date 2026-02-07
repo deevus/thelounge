@@ -1121,6 +1121,16 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 				}
 			}
 		} catch (e) {
+			const clientIp = colors.bold(getClientIp(socket));
+
+			if (e instanceof errors.OPError) {
+				log.warn(
+					`OpenID provider error from ${clientIp}: ${e.error} (${
+						e.error_description || "no description"
+					})`
+				);
+			}
+
 			data.user = "";
 			data.password = "";
 		}
