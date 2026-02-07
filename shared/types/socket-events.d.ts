@@ -65,7 +65,7 @@ interface ServerToClientEvents {
 
 	part: EventHandler<{chan: number}>;
 
-	"sign-out": NoPayloadEventHandler;
+	"sign-out": (data?: {logoutUrl?: string}) => void;
 
 	"sync_sort:networks": EventHandler<{order: SharedNetwork["uuid"][]}>;
 	"sync_sort:channels": EventHandler<{

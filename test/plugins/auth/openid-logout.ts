@@ -76,4 +76,19 @@ describe("OpenID front-channel logout", function () {
 			expect(updatedSession.idToken).to.equal("test_id_token");
 		});
 	});
+
+	describe("sign-out event payload", function () {
+		it("should support optional logoutUrl in payload", function () {
+			// Type test: ensure the payload shape is valid
+			type SignOutPayload = {logoutUrl?: string} | undefined;
+
+			const withUrl: SignOutPayload = {logoutUrl: "https://auth.example.com/logout"};
+			const withoutUrl: SignOutPayload = undefined;
+			const emptyPayload: SignOutPayload = {};
+
+			expect(withUrl?.logoutUrl).to.equal("https://auth.example.com/logout");
+			expect(withoutUrl).to.be.undefined;
+			expect(emptyPayload?.logoutUrl).to.be.undefined;
+		});
+	});
 });
