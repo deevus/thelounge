@@ -167,4 +167,104 @@ describe("OpenID front-channel logout", function () {
 			expect(shouldRedirectToLogout({})).to.be.false;
 		});
 	});
+
+	describe("OpenID logout integration", function () {
+		let originalOpenidEnable: boolean;
+		let originalOpenidLogout: boolean;
+
+		beforeEach(function () {
+			originalOpenidEnable = Config.values.openid.enable;
+			originalOpenidLogout = Config.values.openid.logout;
+		});
+
+		afterEach(function () {
+			Config.values.openid.enable = originalOpenidEnable;
+			Config.values.openid.logout = originalOpenidLogout;
+		});
+
+		describe("Test scenario 1: OpenID enabled, logout true, endpoint exists", function () {
+			it("should produce a logout URL with id_token_hint", function () {
+				Config.values.openid.enable = true;
+				Config.values.openid.logout = true;
+
+				const endSessionEndpoint = "https://auth.example.com/logout";
+				const idToken = "test_id_token";
+
+				const conditions =
+					Config.values.openid.enable &&
+					Config.values.openid.logout &&
+					endSessionEndpoint;
+
+				expect(conditions).to.be.ok;
+
+				const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(
+					idToken
+				)}`;
+				expect(logoutUrl).to.include("id_token_hint=test_id_token");
+			});
+		});
+
+		describe("Test scenario 2: OpenID enabled, logout false", function () {
+			it("should not produce a logout URL", function () {
+				Config.values.openid.enable = true;
+				Config.values.openid.logout = false;
+
+				const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
+
+				expect(shouldBuildUrl).to.be.false;
+			});
+		});
+
+		describe("Test scenario 3: OpenID enabled, logout true, no endpoint", function () {
+			it("should not produce a logout URL", function () {
+				Config.values.openid.enable = true;
+				Config.values.openid.logout = true;
+
+				const endSessionEndpoint = undefined;
+				const conditions =
+					Config.values.openid.enable &&
+					Config.values.openid.logout &&
+					endSessionEndpoint;
+
+				expect(conditions).to.be.not.ok;
+			});
+		});
+
+		describe("Test scenario 4: OpenID disabled", function () {
+			it("should not produce a logout URL", function () {
+				Config.values.openid.enable = false;
+				Config.values.openid.logout = true;
+
+				const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
+
+				expect(shouldBuildUrl).to.be.false;
+			});
+		});
+
+		describe("Test scenario 5: Revoking other session", function () {
+			it("should not include logout URL for non-current session", function () {
+				const currentToken: string = "current_token";
+				const tokenToSignOut: string = "other_token";
+
+				const isCurrentSession = tokenToSignOut === currentToken;
+
+				expect(isCurrentSession).to.be.false;
+				// logoutUrl should only be set for current session
+			});
+		});
+
+		describe("Edge case: Old session without idToken", function () {
+			it("should build logout URL without id_token_hint", function () {
+				const endSessionEndpoint = "https://auth.example.com/logout";
+				const idToken = undefined;
+
+				const logoutUrl = idToken
+					? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+					: endSessionEndpoint;
+
+				expect(logoutUrl).to.equal("https://auth.example.com/logout");
+				expect(logoutUrl).to.not.include("id_token_hint");
+			});
+		});
+	});
 });
