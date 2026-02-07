@@ -13,6 +13,7 @@
 ## Task 1: Add idToken to Session Type
 
 **Files:**
+
 - Modify: `server/client.ts:68-75`
 
 **Step 1: Write the failing test**
@@ -23,39 +24,39 @@ Create test file `test/plugins/auth/openid-logout.ts`:
 import {expect} from "chai";
 
 describe("OpenID front-channel logout", function () {
-	describe("Session idToken storage", function () {
-		it("should allow storing idToken in session data", function () {
-			// This test verifies the type system accepts idToken
-			const session: {
-				lastUse: number;
-				ip: string;
-				agent: string;
-				idToken?: string;
-			} = {
-				lastUse: Date.now(),
-				ip: "127.0.0.1",
-				agent: "Test Browser",
-				idToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test",
-			};
+  describe("Session idToken storage", function () {
+    it("should allow storing idToken in session data", function () {
+      // This test verifies the type system accepts idToken
+      const session: {
+        lastUse: number;
+        ip: string;
+        agent: string;
+        idToken?: string;
+      } = {
+        lastUse: Date.now(),
+        ip: "127.0.0.1",
+        agent: "Test Browser",
+        idToken: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test",
+      };
 
-			expect(session.idToken).to.equal("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test");
-		});
+      expect(session.idToken).to.equal("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test");
+    });
 
-		it("should allow session without idToken for backwards compatibility", function () {
-			const session: {
-				lastUse: number;
-				ip: string;
-				agent: string;
-				idToken?: string;
-			} = {
-				lastUse: Date.now(),
-				ip: "127.0.0.1",
-				agent: "Test Browser",
-			};
+    it("should allow session without idToken for backwards compatibility", function () {
+      const session: {
+        lastUse: number;
+        ip: string;
+        agent: string;
+        idToken?: string;
+      } = {
+        lastUse: Date.now(),
+        ip: "127.0.0.1",
+        agent: "Test Browser",
+      };
 
-			expect(session.idToken).to.be.undefined;
-		});
-	});
+      expect(session.idToken).to.be.undefined;
+    });
+  });
 });
 ```
 
@@ -102,6 +103,7 @@ git commit -m "feat(openid): add idToken field to session type for logout suppor
 ## Task 2: Store idToken During Authentication
 
 **Files:**
+
 - Modify: `server/server.ts:1104-1132`
 - Test: `test/plugins/auth/openid-logout.ts`
 
@@ -111,18 +113,18 @@ Add to `test/plugins/auth/openid-logout.ts`:
 
 ```typescript
 describe("idToken storage during authentication", function () {
-	it("should extract id_token from tokenSet", function () {
-		// Simulate tokenSet response from openid-client
-		const mockTokenSet = {
-			access_token: "access_token_value",
-			id_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature",
-			token_type: "Bearer",
-			expires_at: Date.now() + 3600,
-		};
+  it("should extract id_token from tokenSet", function () {
+    // Simulate tokenSet response from openid-client
+    const mockTokenSet = {
+      access_token: "access_token_value",
+      id_token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature",
+      token_type: "Bearer",
+      expires_at: Date.now() + 3600,
+    };
 
-		expect(mockTokenSet.id_token).to.be.a("string");
-		expect(mockTokenSet.id_token).to.include("eyJ");
-	});
+    expect(mockTokenSet.id_token).to.be.a("string");
+    expect(mockTokenSet.id_token).to.include("eyJ");
+  });
 });
 ```
 
@@ -147,8 +149,8 @@ let pendingIdToken: string | undefined;
 Then after line 1131 (after the role authorization check), add:
 
 ```typescript
-			// Store id_token for front-channel logout
-			pendingIdToken = tokenSet.id_token;
+// Store id_token for front-channel logout
+pendingIdToken = tokenSet.id_token;
 ```
 
 **Step 4: Run tests to verify nothing broke**
@@ -169,6 +171,7 @@ git commit -m "feat(openid): store id_token from authentication for logout"
 ## Task 3: Save idToken to Session on Login
 
 **Files:**
+
 - Modify: `server/client.ts:422-426`
 - Modify: `server/server.ts` (pass idToken to registerPush)
 
@@ -178,21 +181,21 @@ Add to `test/plugins/auth/openid-logout.ts`:
 
 ```typescript
 describe("Session creation with idToken", function () {
-	it("should include idToken when provided during session update", function () {
-		const session = {
-			lastUse: Date.now(),
-			ip: "127.0.0.1",
-			agent: "Test Browser",
-		};
+  it("should include idToken when provided during session update", function () {
+    const session = {
+      lastUse: Date.now(),
+      ip: "127.0.0.1",
+      agent: "Test Browser",
+    };
 
-		// Simulate adding idToken during session update
-		const updatedSession = {
-			...session,
-			idToken: "test_id_token",
-		};
+    // Simulate adding idToken during session update
+    const updatedSession = {
+      ...session,
+      idToken: "test_id_token",
+    };
 
-		expect(updatedSession.idToken).to.equal("test_id_token");
-	});
+    expect(updatedSession.idToken).to.equal("test_id_token");
+  });
 });
 ```
 
@@ -207,23 +210,26 @@ Expected: PASS
 In `server/client.ts`, modify the `registerPush` method signature and session assignment. Find line 422-426:
 
 Change the method signature at line 405 from:
+
 ```typescript
 registerPush(token: string, ip: string, userAgent: string) {
 ```
 
 To:
+
 ```typescript
 registerPush(token: string, ip: string, userAgent: string, idToken?: string) {
 ```
 
 And modify line 422-426:
+
 ```typescript
-		client.config.sessions[token] = _.assign(client.config.sessions[token], {
-			lastUse: Date.now(),
-			ip: ip,
-			agent: friendlyAgent,
-			...(idToken && {idToken}),
-		});
+client.config.sessions[token] = _.assign(client.config.sessions[token], {
+  lastUse: Date.now(),
+  ip: ip,
+  agent: friendlyAgent,
+  ...(idToken && {idToken}),
+});
 ```
 
 **Step 4: Update server.ts to pass idToken to registerPush**
@@ -231,11 +237,13 @@ And modify line 422-426:
 In `server/server.ts`, find where `registerPush` is called (search for "registerPush"). Modify the call to pass the `pendingIdToken`:
 
 Find the call (around line 990-1000):
+
 ```typescript
 client.registerPush(data.token, getClientIp(socket), userAgent);
 ```
 
 Change to:
+
 ```typescript
 client.registerPush(data.token, getClientIp(socket), userAgent, pendingIdToken);
 pendingIdToken = undefined; // Clear after use
@@ -259,6 +267,7 @@ git commit -m "feat(openid): save idToken to session during login"
 ## Task 4: Update Socket Event Types for sign-out
 
 **Files:**
+
 - Modify: `shared/types/socket-events.d.ts:68`
 
 **Step 1: Write the failing test**
@@ -267,18 +276,18 @@ Add to `test/plugins/auth/openid-logout.ts`:
 
 ```typescript
 describe("sign-out event payload", function () {
-	it("should support optional logoutUrl in payload", function () {
-		// Type test: ensure the payload shape is valid
-		type SignOutPayload = { logoutUrl?: string } | undefined;
+  it("should support optional logoutUrl in payload", function () {
+    // Type test: ensure the payload shape is valid
+    type SignOutPayload = {logoutUrl?: string} | undefined;
 
-		const withUrl: SignOutPayload = { logoutUrl: "https://auth.example.com/logout" };
-		const withoutUrl: SignOutPayload = undefined;
-		const emptyPayload: SignOutPayload = {};
+    const withUrl: SignOutPayload = {logoutUrl: "https://auth.example.com/logout"};
+    const withoutUrl: SignOutPayload = undefined;
+    const emptyPayload: SignOutPayload = {};
 
-		expect(withUrl?.logoutUrl).to.equal("https://auth.example.com/logout");
-		expect(withoutUrl).to.be.undefined;
-		expect(emptyPayload?.logoutUrl).to.be.undefined;
-	});
+    expect(withUrl?.logoutUrl).to.equal("https://auth.example.com/logout");
+    expect(withoutUrl).to.be.undefined;
+    expect(emptyPayload?.logoutUrl).to.be.undefined;
+  });
 });
 ```
 
@@ -293,11 +302,13 @@ Expected: PASS
 In `shared/types/socket-events.d.ts`, modify line 68:
 
 From:
+
 ```typescript
 	"sign-out": NoPayloadEventHandler;
 ```
 
 To:
+
 ```typescript
 	"sign-out": (data?: {logoutUrl?: string}) => void;
 ```
@@ -320,6 +331,7 @@ git commit -m "feat(openid): update sign-out event type to support logout URL"
 ## Task 5: Build Logout URL in Sign-Out Handler
 
 **Files:**
+
 - Modify: `server/server.ts:844-874`
 - Test: `test/plugins/auth/openid-logout.ts`
 
@@ -331,58 +343,58 @@ Add to `test/plugins/auth/openid-logout.ts`:
 import Config from "../../server/config";
 
 describe("Logout URL construction", function () {
-	let originalOpenidEnable: boolean;
-	let originalOpenidLogout: boolean;
+  let originalOpenidEnable: boolean;
+  let originalOpenidLogout: boolean;
 
-	beforeEach(function () {
-		originalOpenidEnable = Config.values.openid.enable;
-		originalOpenidLogout = Config.values.openid.logout;
-	});
+  beforeEach(function () {
+    originalOpenidEnable = Config.values.openid.enable;
+    originalOpenidLogout = Config.values.openid.logout;
+  });
 
-	afterEach(function () {
-		Config.values.openid.enable = originalOpenidEnable;
-		Config.values.openid.logout = originalOpenidLogout;
-	});
+  afterEach(function () {
+    Config.values.openid.enable = originalOpenidEnable;
+    Config.values.openid.logout = originalOpenidLogout;
+  });
 
-	it("should construct logout URL with id_token_hint when all conditions met", function () {
-		const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
-		const idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test";
+  it("should construct logout URL with id_token_hint when all conditions met", function () {
+    const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
+    const idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test";
 
-		const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
+    const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
 
-		expect(logoutUrl).to.equal(
-			"https://auth.example.com/oauth2/logout?id_token_hint=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test"
-		);
-	});
+    expect(logoutUrl).to.equal(
+      "https://auth.example.com/oauth2/logout?id_token_hint=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test"
+    );
+  });
 
-	it("should construct logout URL without id_token_hint when idToken missing", function () {
-		const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
-		const idToken = undefined;
+  it("should construct logout URL without id_token_hint when idToken missing", function () {
+    const endSessionEndpoint = "https://auth.example.com/oauth2/logout";
+    const idToken = undefined;
 
-		const logoutUrl = idToken
-			? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
-			: endSessionEndpoint;
+    const logoutUrl = idToken
+      ? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+      : endSessionEndpoint;
 
-		expect(logoutUrl).to.equal("https://auth.example.com/oauth2/logout");
-	});
+    expect(logoutUrl).to.equal("https://auth.example.com/oauth2/logout");
+  });
 
-	it("should return undefined when logout config is false", function () {
-		Config.values.openid.enable = true;
-		Config.values.openid.logout = false;
+  it("should return undefined when logout config is false", function () {
+    Config.values.openid.enable = true;
+    Config.values.openid.logout = false;
 
-		const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
+    const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
 
-		expect(shouldBuildLogoutUrl).to.be.false;
-	});
+    expect(shouldBuildLogoutUrl).to.be.false;
+  });
 
-	it("should return undefined when openid is disabled", function () {
-		Config.values.openid.enable = false;
-		Config.values.openid.logout = true;
+  it("should return undefined when openid is disabled", function () {
+    Config.values.openid.enable = false;
+    Config.values.openid.logout = true;
 
-		const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
+    const shouldBuildLogoutUrl = Config.values.openid.enable && Config.values.openid.logout;
 
-		expect(shouldBuildLogoutUrl).to.be.false;
-	});
+    expect(shouldBuildLogoutUrl).to.be.false;
+  });
 });
 ```
 
@@ -397,53 +409,53 @@ Expected: PASS
 In `server/server.ts`, modify the sign-out handler starting at line 844. Replace the entire handler:
 
 ```typescript
-	socket.on("sign-out", (tokenToSignOut) => {
-		// If no token provided, sign same client out
-		if (!tokenToSignOut || typeof tokenToSignOut !== "string") {
-			tokenToSignOut = token;
-		}
+socket.on("sign-out", (tokenToSignOut) => {
+  // If no token provided, sign same client out
+  if (!tokenToSignOut || typeof tokenToSignOut !== "string") {
+    tokenToSignOut = token;
+  }
 
-		if (!Object.prototype.hasOwnProperty.call(client.config.sessions, tokenToSignOut)) {
-			return;
-		}
+  if (!Object.prototype.hasOwnProperty.call(client.config.sessions, tokenToSignOut)) {
+    return;
+  }
 
-		// Check if this is the current session signing out and OpenID logout is enabled
-		let logoutUrl: string | undefined;
+  // Check if this is the current session signing out and OpenID logout is enabled
+  let logoutUrl: string | undefined;
 
-		if (
-			tokenToSignOut === token &&
-			Config.values.openid.enable &&
-			Config.values.openid.logout &&
-			issuer?.metadata?.end_session_endpoint
-		) {
-			const idToken = client.config.sessions[tokenToSignOut].idToken;
-			const endSessionEndpoint = issuer.metadata.end_session_endpoint as string;
+  if (
+    tokenToSignOut === token &&
+    Config.values.openid.enable &&
+    Config.values.openid.logout &&
+    issuer?.metadata?.end_session_endpoint
+  ) {
+    const idToken = client.config.sessions[tokenToSignOut].idToken;
+    const endSessionEndpoint = issuer.metadata.end_session_endpoint as string;
 
-			logoutUrl = idToken
-				? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
-				: endSessionEndpoint;
-		}
+    logoutUrl = idToken
+      ? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+      : endSessionEndpoint;
+  }
 
-		delete client.config.sessions[tokenToSignOut];
+  delete client.config.sessions[tokenToSignOut];
 
-		client.save();
+  client.save();
 
-		_.map(client.attachedClients, (attachedClient, socketId) => {
-			if (attachedClient.token !== tokenToSignOut) {
-				return;
-			}
+  _.map(client.attachedClients, (attachedClient, socketId) => {
+    if (attachedClient.token !== tokenToSignOut) {
+      return;
+    }
 
-			const socketToRemove = manager!.sockets.of("/").sockets.get(socketId);
+    const socketToRemove = manager!.sockets.of("/").sockets.get(socketId);
 
-			socketToRemove!.emit("sign-out", logoutUrl ? {logoutUrl} : undefined);
-			socketToRemove!.disconnect();
-		});
+    socketToRemove!.emit("sign-out", logoutUrl ? {logoutUrl} : undefined);
+    socketToRemove!.disconnect();
+  });
 
-		// Do not send updated session list if user simply logs out
-		if (tokenToSignOut !== token) {
-			sendSessionList();
-		}
-	});
+  // Do not send updated session list if user simply logs out
+  if (tokenToSignOut !== token) {
+    sendSessionList();
+  }
+});
 ```
 
 **Step 4: Run tests to verify nothing broke**
@@ -464,6 +476,7 @@ git commit -m "feat(openid): build logout URL in sign-out handler"
 ## Task 6: Handle Logout URL in Client
 
 **Files:**
+
 - Modify: `client/js/socket-events/sign_out.ts`
 
 **Step 1: Write the failing test**
@@ -472,32 +485,32 @@ Add to `test/plugins/auth/openid-logout.ts`:
 
 ```typescript
 describe("Client sign-out handler", function () {
-	it("should redirect when logoutUrl is provided", function () {
-		const data = {logoutUrl: "https://auth.example.com/logout"};
+  it("should redirect when logoutUrl is provided", function () {
+    const data = {logoutUrl: "https://auth.example.com/logout"};
 
-		// Simulate the logic
-		const shouldRedirect = data?.logoutUrl !== undefined;
+    // Simulate the logic
+    const shouldRedirect = data?.logoutUrl !== undefined;
 
-		expect(shouldRedirect).to.be.true;
-	});
+    expect(shouldRedirect).to.be.true;
+  });
 
-	it("should call Auth.signout when no logoutUrl provided", function () {
-		const data = undefined;
+  it("should call Auth.signout when no logoutUrl provided", function () {
+    const data = undefined;
 
-		// Simulate the logic
-		const shouldRedirect = data?.logoutUrl !== undefined;
+    // Simulate the logic
+    const shouldRedirect = data?.logoutUrl !== undefined;
 
-		expect(shouldRedirect).to.be.false;
-	});
+    expect(shouldRedirect).to.be.false;
+  });
 
-	it("should call Auth.signout when logoutUrl is empty object", function () {
-		const data = {};
+  it("should call Auth.signout when logoutUrl is empty object", function () {
+    const data = {};
 
-		// Simulate the logic - using optional chaining
-		const shouldRedirect = (data as {logoutUrl?: string})?.logoutUrl !== undefined;
+    // Simulate the logic - using optional chaining
+    const shouldRedirect = (data as {logoutUrl?: string})?.logoutUrl !== undefined;
 
-		expect(shouldRedirect).to.be.false;
-	});
+    expect(shouldRedirect).to.be.false;
+  });
 });
 ```
 
@@ -516,11 +529,11 @@ import socket from "../socket";
 import Auth from "../auth";
 
 socket.on("sign-out", function (data?: {logoutUrl?: string}) {
-	if (data?.logoutUrl) {
-		window.location.replace(data.logoutUrl);
-	} else {
-		Auth.signout();
-	}
+  if (data?.logoutUrl) {
+    window.location.replace(data.logoutUrl);
+  } else {
+    Auth.signout();
+  }
 });
 ```
 
@@ -542,6 +555,7 @@ git commit -m "feat(openid): handle logout URL redirect in client"
 ## Task 7: Integration Test for Full Logout Flow
 
 **Files:**
+
 - Test: `test/plugins/auth/openid-logout.ts`
 
 **Step 1: Write comprehensive integration tests**
@@ -550,95 +564,97 @@ Add to `test/plugins/auth/openid-logout.ts`:
 
 ```typescript
 describe("OpenID logout integration", function () {
-	let originalOpenidEnable: boolean;
-	let originalOpenidLogout: boolean;
+  let originalOpenidEnable: boolean;
+  let originalOpenidLogout: boolean;
 
-	beforeEach(function () {
-		originalOpenidEnable = Config.values.openid.enable;
-		originalOpenidLogout = Config.values.openid.logout;
-	});
+  beforeEach(function () {
+    originalOpenidEnable = Config.values.openid.enable;
+    originalOpenidLogout = Config.values.openid.logout;
+  });
 
-	afterEach(function () {
-		Config.values.openid.enable = originalOpenidEnable;
-		Config.values.openid.logout = originalOpenidLogout;
-	});
+  afterEach(function () {
+    Config.values.openid.enable = originalOpenidEnable;
+    Config.values.openid.logout = originalOpenidLogout;
+  });
 
-	describe("Test scenario 1: OpenID enabled, logout true, endpoint exists", function () {
-		it("should produce a logout URL with id_token_hint", function () {
-			Config.values.openid.enable = true;
-			Config.values.openid.logout = true;
+  describe("Test scenario 1: OpenID enabled, logout true, endpoint exists", function () {
+    it("should produce a logout URL with id_token_hint", function () {
+      Config.values.openid.enable = true;
+      Config.values.openid.logout = true;
 
-			const endSessionEndpoint = "https://auth.example.com/logout";
-			const idToken = "test_id_token";
+      const endSessionEndpoint = "https://auth.example.com/logout";
+      const idToken = "test_id_token";
 
-			const conditions = Config.values.openid.enable && Config.values.openid.logout && endSessionEndpoint;
+      const conditions =
+        Config.values.openid.enable && Config.values.openid.logout && endSessionEndpoint;
 
-			expect(conditions).to.be.truthy;
+      expect(conditions).to.be.truthy;
 
-			const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
-			expect(logoutUrl).to.include("id_token_hint=test_id_token");
-		});
-	});
+      const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
+      expect(logoutUrl).to.include("id_token_hint=test_id_token");
+    });
+  });
 
-	describe("Test scenario 2: OpenID enabled, logout false", function () {
-		it("should not produce a logout URL", function () {
-			Config.values.openid.enable = true;
-			Config.values.openid.logout = false;
+  describe("Test scenario 2: OpenID enabled, logout false", function () {
+    it("should not produce a logout URL", function () {
+      Config.values.openid.enable = true;
+      Config.values.openid.logout = false;
 
-			const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
+      const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
 
-			expect(shouldBuildUrl).to.be.false;
-		});
-	});
+      expect(shouldBuildUrl).to.be.false;
+    });
+  });
 
-	describe("Test scenario 3: OpenID enabled, logout true, no endpoint", function () {
-		it("should not produce a logout URL", function () {
-			Config.values.openid.enable = true;
-			Config.values.openid.logout = true;
+  describe("Test scenario 3: OpenID enabled, logout true, no endpoint", function () {
+    it("should not produce a logout URL", function () {
+      Config.values.openid.enable = true;
+      Config.values.openid.logout = true;
 
-			const endSessionEndpoint = undefined;
-			const conditions = Config.values.openid.enable && Config.values.openid.logout && endSessionEndpoint;
+      const endSessionEndpoint = undefined;
+      const conditions =
+        Config.values.openid.enable && Config.values.openid.logout && endSessionEndpoint;
 
-			expect(conditions).to.be.falsy;
-		});
-	});
+      expect(conditions).to.be.falsy;
+    });
+  });
 
-	describe("Test scenario 4: OpenID disabled", function () {
-		it("should not produce a logout URL", function () {
-			Config.values.openid.enable = false;
-			Config.values.openid.logout = true;
+  describe("Test scenario 4: OpenID disabled", function () {
+    it("should not produce a logout URL", function () {
+      Config.values.openid.enable = false;
+      Config.values.openid.logout = true;
 
-			const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
+      const shouldBuildUrl = Config.values.openid.enable && Config.values.openid.logout;
 
-			expect(shouldBuildUrl).to.be.false;
-		});
-	});
+      expect(shouldBuildUrl).to.be.false;
+    });
+  });
 
-	describe("Test scenario 5: Revoking other session", function () {
-		it("should not include logout URL for non-current session", function () {
-			const currentToken = "current_token";
-			const tokenToSignOut = "other_token";
+  describe("Test scenario 5: Revoking other session", function () {
+    it("should not include logout URL for non-current session", function () {
+      const currentToken = "current_token";
+      const tokenToSignOut = "other_token";
 
-			const isCurrentSession = tokenToSignOut === currentToken;
+      const isCurrentSession = tokenToSignOut === currentToken;
 
-			expect(isCurrentSession).to.be.false;
-			// logoutUrl should only be set for current session
-		});
-	});
+      expect(isCurrentSession).to.be.false;
+      // logoutUrl should only be set for current session
+    });
+  });
 
-	describe("Edge case: Old session without idToken", function () {
-		it("should build logout URL without id_token_hint", function () {
-			const endSessionEndpoint = "https://auth.example.com/logout";
-			const idToken = undefined;
+  describe("Edge case: Old session without idToken", function () {
+    it("should build logout URL without id_token_hint", function () {
+      const endSessionEndpoint = "https://auth.example.com/logout";
+      const idToken = undefined;
 
-			const logoutUrl = idToken
-				? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
-				: endSessionEndpoint;
+      const logoutUrl = idToken
+        ? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
+        : endSessionEndpoint;
 
-			expect(logoutUrl).to.equal("https://auth.example.com/logout");
-			expect(logoutUrl).to.not.include("id_token_hint");
-		});
-	});
+      expect(logoutUrl).to.equal("https://auth.example.com/logout");
+      expect(logoutUrl).to.not.include("id_token_hint");
+    });
+  });
 });
 ```
 
@@ -679,6 +695,7 @@ Create `docs/plans/2026-02-07-openid-front-channel-logout-testing.md`:
 # OpenID Front-Channel Logout - Manual Testing Checklist
 
 ## Prerequisites
+
 - OpenID provider configured (e.g., Keycloak, Authentik, Auth0)
 - `openid.enable: true` in config
 - `openid.logout: true` in config
@@ -686,29 +703,34 @@ Create `docs/plans/2026-02-07-openid-front-channel-logout-testing.md`:
 ## Test Cases
 
 ### 1. Normal logout with OpenID
+
 1. Log in via OpenID
 2. Click "Sign out" on current session
 3. **Expected:** Redirected to OpenID provider's logout page
 4. **Expected:** Logged out of The Lounge
 
 ### 2. Logout with logout disabled
+
 1. Set `openid.logout: false`
 2. Log in via OpenID
 3. Click "Sign out"
 4. **Expected:** Normal logout (page reload), no redirect to provider
 
 ### 3. Revoke other session
+
 1. Log in via OpenID in two browsers
 2. In browser A, revoke browser B's session
 3. **Expected:** Browser B gets logged out, no redirect
 4. **Expected:** Browser A stays logged in
 
 ### 4. Provider without end_session_endpoint
+
 1. Use a provider that doesn't expose end_session_endpoint
 2. Log in and sign out
 3. **Expected:** Normal logout, no errors
 
 ### 5. Old session without idToken (upgrade scenario)
+
 1. Have a session from before this feature
 2. Sign out
 3. **Expected:** Redirects to logout endpoint (without id_token_hint)

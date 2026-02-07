@@ -6,13 +6,13 @@ When OpenID is enabled and the `logout` config option is true, pressing "Sign ou
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Flow direction | Server-initiated | Server controls session cleanup, can include id_token_hint |
-| id_token storage | Store in session data | Required for id_token_hint, already server-side and secure |
-| Missing endpoint | Silent fallback | Don't bother user if provider lacks support |
-| Session revocation | Current session only | "Revoke" just invalidates token, matches user expectations |
-| Post-logout redirect | None | Avoids redirect loop; user stays on provider's logout page |
+| Decision             | Choice                | Rationale                                                  |
+| -------------------- | --------------------- | ---------------------------------------------------------- |
+| Flow direction       | Server-initiated      | Server controls session cleanup, can include id_token_hint |
+| id_token storage     | Store in session data | Required for id_token_hint, already server-side and secure |
+| Missing endpoint     | Silent fallback       | Don't bother user if provider lacks support                |
+| Session revocation   | Current session only  | "Revoke" just invalidates token, matches user expectations |
+| Post-logout redirect | None                  | Avoids redirect loop; user stays on provider's logout page |
 
 ## Data Flow
 
@@ -47,10 +47,12 @@ User ends up on the OpenID provider's "logged out" page. No redirect back to The
 ### server/server.ts
 
 **Authentication (~line 300-400):**
+
 - After `openidClient.callback()` returns tokens, extract `id_token`
 - Store in session: `client.config.sessions[token].idToken = tokenSet.id_token`
 
 **Sign-out handler (line 844):**
+
 - Check `Config.values.openid.enable && Config.values.openid.logout`
 - Check `issuer.metadata.end_session_endpoint` exists
 - Retrieve `idToken` from `client.config.sessions[tokenToSignOut]`
@@ -60,6 +62,7 @@ User ends up on the OpenID provider's "logged out" page. No redirect back to The
 ### shared/types/socket-events.d.ts
 
 Update sign-out event signature:
+
 ```typescript
 "sign-out": (data?: { logoutUrl?: string }) => void;
 ```
@@ -67,6 +70,7 @@ Update sign-out event signature:
 ### shared/types/config.ts
 
 Add idToken to session type:
+
 ```typescript
 interface Session {
   // ... existing fields
@@ -77,8 +81,9 @@ interface Session {
 ### client/js/socket-events/sign_out.ts
 
 Handle optional logoutUrl:
+
 ```typescript
-socket.on("sign-out", function (data?: { logoutUrl?: string }) {
+socket.on("sign-out", function (data?: {logoutUrl?: string}) {
   if (data?.logoutUrl) {
     window.location.replace(data.logoutUrl);
   } else {
