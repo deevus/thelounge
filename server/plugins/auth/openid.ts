@@ -11,13 +11,18 @@ function openIDAuth(
 	callback: (success: boolean) => void
 ): void {
 	if (user === "") {
-		log.error(`Authentication failed`);
+		log.error(
+			`OpenID: Authentication failed - no username provided (check usernameClaim configuration)`
+		);
 		callback(false);
 		return;
 	}
 
+	log.debug(`OpenID: Authenticating user '${user}', existing=${!!existingUser}`);
+
 	// If no user is found, create it (unless they already exist on disk)
 	if (!existingUser && !manager.getUsers().includes(user)) {
+		log.info(`OpenID: Creating new user '${user}'`);
 		manager.addUser(user, null, true);
 	}
 

@@ -1120,16 +1120,40 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 	}
 
 	if (Config.values.openid.enable && "password" in data) {
+		const clientIp = colors.bold(getClientIp(socket));
+		log.debug(`OpenID: Processing callback from ${clientIp}`);
+
 		try {
 			const tokenSet = await openidClient.callback(
 				Config.values.openid.baseURL,
 				openidClient.callbackParams(data.password as string),
 				{code_verifier, state}
 			);
+			log.debug(`OpenID: Token exchange successful from ${clientIp}`);
 
 			const userinfo = await openidClient.userinfo(tokenSet);
+			log.debug(
+				`OpenID: Retrieved userinfo from ${clientIp}, claims: [${Object.keys(userinfo).join(
+					", "
+				)}]`
+			);
 
-			data.user = userinfo[Config.values.openid.usernameClaim] as string;
+			const usernameClaim = Config.values.openid.usernameClaim;
+			const extractedUsername = userinfo[usernameClaim];
+
+			if (!extractedUsername || typeof extractedUsername !== "string") {
+				log.warn(
+					`OpenID: Username claim '${usernameClaim}' not found or invalid from ${clientIp}. ` +
+						`Available claims: [${Object.keys(userinfo).join(", ")}]`
+				);
+				data.user = "";
+				data.password = "";
+			} else {
+				data.user = extractedUsername;
+				log.debug(
+					`OpenID: Extracted username '${data.user}' from claim '${usernameClaim}'`
+				);
+			}
 
 			if (Config.values.openid.roleClaim !== "") {
 				const availabeRoles = _.get(userinfo, Config.values.openid.roleClaim) as string[];
@@ -1140,11 +1164,8 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 
 				if (!userAuthorized) {
 					log.warn(
-						`OpenID user ${colors.bold(data.user)} from ${colors.bold(
-							getClientIp(socket)
-						)} lacks required roles: has [${availabeRoles.join(
-							", "
-						)}], needs [${requiredRoles.join(", ")}]`
+						`OpenID: User '${data.user}' from ${clientIp} lacks required roles: ` +
+							`has [${availabeRoles.join(", ")}], needs [${requiredRoles.join(", ")}]`
 					);
 					data.user = "";
 					data.password = "";
@@ -1154,8 +1175,6 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 			// Store id_token for front-channel logout
 			pendingIdToken = tokenSet.id_token;
 		} catch (e) {
-			const clientIp = colors.bold(getClientIp(socket));
-
 			if (e instanceof errors.OPError) {
 				log.warn(
 					`OpenID provider error from ${clientIp}: ${e.error} (${
