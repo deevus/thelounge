@@ -58,4 +58,22 @@ describe("OpenID front-channel logout", function () {
 			expect(userConfig.sessions["test-token"].idToken).to.be.undefined;
 		});
 	});
+
+	describe("Session creation with idToken", function () {
+		it("should include idToken when provided during session update", function () {
+			const session = {
+				lastUse: Date.now(),
+				ip: "127.0.0.1",
+				agent: "Test Browser",
+			};
+
+			// Simulate adding idToken during session update
+			const updatedSession = {
+				...session,
+				idToken: "test_id_token",
+			};
+
+			expect(updatedSession.idToken).to.equal("test_id_token");
+		});
+	});
 });

@@ -401,7 +401,7 @@ class Client {
 		return crypto.createHash("sha512").update(token).digest("hex");
 	}
 
-	updateSession(token: string, ip: string, request: any) {
+	updateSession(token: string, ip: string, request: any, idToken?: string) {
 		const client = this;
 		const agent = UAParser(request.headers["user-agent"] || "");
 		let friendlyAgent = "";
@@ -424,6 +424,7 @@ class Client {
 			lastUse: Date.now(),
 			ip: ip,
 			agent: friendlyAgent,
+			...(idToken && {idToken}),
 		});
 
 		client.save();
