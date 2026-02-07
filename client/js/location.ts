@@ -4,4 +4,7 @@ export default {
 	reload() {
 		window.location.reload();
 	},
+	replace(url: string) {
+		window.location.replace(url);
+	},
 };

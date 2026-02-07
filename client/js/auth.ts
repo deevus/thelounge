@@ -1,9 +1,20 @@
 import storage from "./localStorage";
 import location from "./location";
 
+type SignoutParams = {
+	logoutUrl?: string;
+};
+
 export default class Auth {
-	static signout() {
+	static signout(params: SignoutParams = {}) {
+		const {logoutUrl} = params;
+
 		storage.clear();
-		location.reload();
+
+		if (logoutUrl) {
+			location.replace(logoutUrl);
+		} else {
+			location.reload();
+		}
 	}
 }

@@ -48,7 +48,6 @@
 <script lang="ts">
 import {computed, defineComponent, PropType} from "vue";
 import localetime from "../js/helpers/localetime";
-import Auth from "../js/auth";
 import socket from "../js/socket";
 import {ClientSession} from "../js/store";
 
@@ -66,12 +65,7 @@ export default defineComponent({
 		});
 
 		const signOut = () => {
-			if (!props.session.current) {
-				socket.emit("sign-out", props.session.token);
-			} else {
-				socket.emit("sign-out");
-				Auth.signout();
-			}
+			socket.emit("sign-out", props.session.current ? undefined : props.session.token);
 		};
 
 		return {
