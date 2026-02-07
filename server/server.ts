@@ -1131,6 +1131,14 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 				);
 			} else if (e instanceof errors.RPError) {
 				log.warn(`OpenID validation error from ${clientIp}: ${e.message}`);
+			} else if (e instanceof Error && "code" in e) {
+				log.warn(
+					`OpenID provider unreachable from ${clientIp}: ${
+						(e as NodeJS.ErrnoException).code
+					}`
+				);
+			} else {
+				log.warn(`OpenID authentication failed from ${clientIp}: ${String(e)}`);
 			}
 
 			data.user = "";
