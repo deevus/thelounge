@@ -1129,6 +1129,8 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 						e.error_description || "no description"
 					})`
 				);
+			} else if (e instanceof errors.RPError) {
+				log.warn(`OpenID validation error from ${clientIp}: ${e.message}`);
 			}
 
 			data.user = "";
