@@ -71,6 +71,7 @@ export type UserConfig = {
 			ip: string;
 			agent: string;
 			pushSubscription?: ClientPushSubscription;
+			idToken?: string;
 		};
 	};
 	clientSettings: {
