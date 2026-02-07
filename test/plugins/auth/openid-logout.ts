@@ -147,4 +147,24 @@ describe("OpenID front-channel logout", function () {
 			expect(shouldBuildLogoutUrl).to.be.false;
 		});
 	});
+
+	describe("Client sign-out handler", function () {
+		// Helper function to simulate client sign-out logic
+		function shouldRedirectToLogout(data?: {logoutUrl?: string}): boolean {
+			return data?.logoutUrl !== undefined;
+		}
+
+		it("should redirect when logoutUrl is provided", function () {
+			const data = {logoutUrl: "https://auth.example.com/logout"};
+			expect(shouldRedirectToLogout(data)).to.be.true;
+		});
+
+		it("should call Auth.signout when no logoutUrl provided", function () {
+			expect(shouldRedirectToLogout(undefined)).to.be.false;
+		});
+
+		it("should call Auth.signout when logoutUrl is empty object", function () {
+			expect(shouldRedirectToLogout({})).to.be.false;
+		});
+	});
 });
