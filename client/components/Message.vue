@@ -28,7 +28,7 @@
 			</span>
 		</template>
 		<template v-else-if="isAction()">
-			<span class="from"><span class="only-copy">***&nbsp;</span></span>
+			<span class="from"><span class="only-copy" aria-hidden="true">***&nbsp;</span></span>
 			<component :is="messageComponent" :network="network" :message="message" />
 		</template>
 		<template v-else-if="message.type === 'action'">
@@ -150,10 +150,14 @@ export default defineComponent({
 		});
 
 		const messageComponent = computed(() => {
-			return "message-" + props.message.type;
+			return "message-" + (props.message.type || "invalid"); // TODO: force existence of type in sharedmsg
 		});
 
 		const isAction = () => {
+			if (!props.message.type) {
+				return false;
+			}
+
 			return typeof MessageTypes["message-" + props.message.type] !== "undefined";
 		};
 

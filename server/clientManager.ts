@@ -9,7 +9,7 @@ import Client, {UserConfig} from "./client";
 import Config from "./config";
 import WebPush from "./plugins/webpush";
 import log from "./log";
-import {Server} from "socket.io";
+import {Server} from "./server";
 
 class ClientManager {
 	clients: Client[];
@@ -86,39 +86,28 @@ class ClientManager {
 	}
 
 	autoloadUsers() {
-		fs.watch(
-			Config.getUsersPath(),
-			_.debounce(
-				() => {
-					const loaded = this.clients.map((c) => c.name);
-					const updatedUsers = this.getUsers();
+		fs.watch(Config.getUsersPath(), (_eventType, file) => {
+			if (!file.endsWith(".json")) {
+				return;
+			}
 
-					if (updatedUsers.length === 0) {
-						log.info(
-							`There are currently no users. Create one with ${colors.bold(
-								"thelounge add <name>"
-							)}.`
-						);
-					}
+			const name = file.slice(0, -5);
 
-					// Reload all users. Existing users will only have their passwords reloaded.
-					updatedUsers.forEach((name) => this.loadUser(name));
+			const userPath = Config.getUserConfigPath(name);
 
-					// Existing users removed since last time users were loaded
-					_.difference(loaded, updatedUsers).forEach((name) => {
-						const client = _.find(this.clients, {name});
+			if (fs.existsSync(userPath)) {
+				this.loadUser(name);
+				return;
+			}
 
-						if (client) {
-							client.quit(true);
-							this.clients = _.without(this.clients, client);
-							log.info(`User ${colors.bold(name)} disconnected and removed.`);
-						}
-					});
-				},
-				1000,
-				{maxWait: 10000}
-			)
-		);
+			const client = _.find(this.clients, {name});
+
+			if (client) {
+				client.quit(true);
+				this.clients = _.without(this.clients, client);
+				log.info(`User ${colors.bold(name)} disconnected and removed.`);
+			}
+		});
 	}
 
 	loadUser(name: string) {
@@ -144,6 +133,7 @@ class ClientManager {
 			}
 		} else {
 			client = new Client(this, name, userConfig);
+			client.connect();
 			this.clients.push(client);
 		}
 
@@ -179,11 +169,12 @@ class ClientManager {
 		};
 
 		try {
-			fs.writeFileSync(userPath, JSON.stringify(user, null, "\t"), {
+			const tmpPath = userPath + ".tmp";
+			fs.writeFileSync(tmpPath, JSON.stringify(user, null, "\t"), {
 				mode: 0o600,
 			});
+			fs.renameSync(tmpPath, userPath);
 		} catch (e: any) {
-			// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 			log.error(`Failed to create user ${colors.green(name)} (${e})`);
 			throw e;
 		}
@@ -251,7 +242,6 @@ class ClientManager {
 
 			return callback ? callback() : true;
 		} catch (e: any) {
-			// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 			log.error(`Failed to update user ${colors.green(client.name)} (${e})`);
 
 			if (callback) {
@@ -273,7 +263,7 @@ class ClientManager {
 		return true;
 	}
 
-	private readUserConfig(name: string) {
+	readUserConfig(name: string) {
 		const userPath = Config.getUserConfigPath(name);
 
 		if (!fs.existsSync(userPath)) {
@@ -285,7 +275,6 @@ class ClientManager {
 			const data = fs.readFileSync(userPath, "utf-8");
 			return JSON.parse(data) as UserConfig;
 		} catch (e: any) {
-			// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 			log.error(`Failed to read user ${colors.bold(name)}: ${e}`);
 		}
 

@@ -4,6 +4,7 @@ import fs, {Stats} from "fs";
 import os from "os";
 import _ from "lodash";
 import colors from "chalk";
+import {SearchOptions} from "ldapjs";
 
 import log from "./log";
 import Helper from "./helper";
@@ -44,7 +45,7 @@ export type Defaults = Pick<
 	| "saslAccount"
 	| "saslPassword"
 > & {
-	join?: string;
+	join: string;
 };
 
 type Identd = {
@@ -57,7 +58,7 @@ type SearchDN = {
 	rootPassword: string;
 	filter: string;
 	base: string;
-	scope: string;
+	scope: SearchOptions["scope"];
 };
 
 type Ldap = {
@@ -88,6 +89,12 @@ type Debug = {
 	raw: boolean;
 };
 
+type StoragePolicy = {
+	enabled: boolean;
+	maxAgeDays: number;
+	deletionPolicy: "statusOnly" | "everything";
+};
+
 export type ConfigType = {
 	public: boolean;
 	host: string | undefined;
@@ -109,6 +116,7 @@ export type ConfigType = {
 	defaults: Defaults;
 	lockNetwork: boolean;
 	messageStorage: string[];
+	storagePolicy: StoragePolicy;
 	useHexIp: boolean;
 	webirc?: WebIRC;
 	identd: Identd;
