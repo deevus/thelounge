@@ -19,7 +19,7 @@ import changelog from "./plugins/changelog";
 import inputs from "./plugins/inputs";
 import Auth from "./plugins/auth";
 
-import {BaseClient, Issuer, generators} from "openid-client";
+import {BaseClient, Issuer, generators, errors} from "openid-client";
 
 import themes from "./plugins/packages/themes";
 themes.loadLocalThemes();
