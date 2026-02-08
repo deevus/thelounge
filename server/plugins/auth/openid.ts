@@ -36,9 +36,6 @@ function scheduleSweep() {
 	}, 5 * 60 * 1000).unref();
 }
 
-// Start sweep on module load
-scheduleSweep();
-
 function openIDAuth(
 	manager: ClientManager,
 	existingUser: Client | null,
@@ -98,6 +95,7 @@ async function initialize(): Promise<boolean> {
 		});
 
 		initialized = true;
+		scheduleSweep();
 		return true;
 	} catch (err) {
 		log.error(`OpenID: Failed to initialize - ${(err as Error).message}`);
