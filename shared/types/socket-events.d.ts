@@ -176,4 +176,6 @@ interface ClientToServerEvents {
 
 interface InterServerEvents {}
 
-interface SocketData {}
+interface SocketData {
+	pendingIdToken?: string;
+}

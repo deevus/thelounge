@@ -19,8 +19,6 @@ import changelog from "./plugins/changelog";
 import inputs from "./plugins/inputs";
 import Auth from "./plugins/auth";
 
-import {BaseClient, Issuer, generators, errors} from "openid-client";
-
 import themes from "./plugins/packages/themes";
 themes.loadLocalThemes();
 
@@ -65,19 +63,6 @@ export type Server = ioServer<
 // A random number that will force clients to reload the page if it differs
 const serverHash = Math.floor(Date.now() * Math.random());
 
-// OpenID code generators and verifiers
-const code_verifier = generators.codeVerifier();
-const code_challenge = generators.codeChallenge(code_verifier);
-const state = generators.state();
-
-let issuer: Issuer;
-
-let openidClient: BaseClient;
-
-let issuerURL: string;
-
-let pendingIdToken: string | undefined;
-
 let manager: ClientManager | null = null;
 
 export default async function (
@@ -114,28 +99,11 @@ export default async function (
 		.use("/storage/", express.static(Config.getStoragePath(), staticOptions));
 
 	if (Config.values.openid.enable) {
-		try {
-			issuer = await Issuer.discover(Config.values.openid.issuerURL);
-			log.info("Discovered OpenID issuer", issuer.metadata.issuer);
-			openidClient = new issuer.Client({
-				client_id: Config.values.openid.clientID,
-				client_secret: Config.values.openid.secret,
-				redirect_uris: [Config.values.openid.baseURL],
-				response_types: ["code"],
-			});
-			const redirectUrl = openidClient.authorizationUrl({
-				scope: "openid email profile",
-				code_challenge,
-				code_challenge_method: "S256",
-				state,
-			});
-			issuerURL = redirectUrl;
-		} catch (err) {
-			log.error(`Failed to initialize OpenID: ${(err as Error).message}`);
+		const success = await Auth.initialize();
+
+		if (!success) {
 			log.error("OpenID authentication will not be available");
 		}
-	} else {
-		log.info("OpenID authentication is disabled");
 	}
 
 	if (Config.values.fileUpload.enable) {
@@ -279,7 +247,7 @@ export default async function (
 				socket.emit("auth:start", {
 					serverHash,
 					openidEnabled: Config.values.openid.enable && !Config.values.public,
-					openidInit: issuerURL,
+					openidInit: Auth.getAuthUrl?.(socket.id) ?? null,
 				});
 			}
 		});
@@ -496,6 +464,7 @@ function initializeClient(
 	}
 
 	socket.on("disconnect", function () {
+		Auth.cleanup?.(socket.id);
 		process.nextTick(() => client.clientDetach(socket.id));
 	});
 
@@ -859,15 +828,10 @@ function initializeClient(
 		if (
 			tokenToSignOut === token &&
 			Config.values.openid.enable &&
-			Config.values.openid.logout &&
-			issuer?.metadata?.end_session_endpoint
+			Config.values.openid.logout
 		) {
 			const idToken = client.config.sessions[tokenToSignOut].idToken;
-			const endSessionEndpoint = issuer.metadata.end_session_endpoint as string;
-
-			logoutUrl = idToken
-				? `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`
-				: endSessionEndpoint;
+			logoutUrl = Auth.buildLogoutUrl?.(idToken);
 		}
 
 		delete client.config.sessions[tokenToSignOut];
@@ -912,13 +876,13 @@ function initializeClient(
 			token = client.calculateTokenHash(newToken);
 			client.attachedClients[socket.id].token = token;
 
-			client.updateSession(token, getClientIp(socket), socket.request, pendingIdToken);
-			pendingIdToken = undefined; // Clear after use
+			client.updateSession(token, getClientIp(socket), socket.request, socket.data.pendingIdToken);
+			socket.data.pendingIdToken = undefined; // Clear after use
 			sendInitEvent(newToken);
 		});
 	} else {
-		client.updateSession(token, getClientIp(socket), socket.request, pendingIdToken);
-		pendingIdToken = undefined; // Clear after use
+		client.updateSession(token, getClientIp(socket), socket.request, socket.data.pendingIdToken);
+		socket.data.pendingIdToken = undefined; // Clear after use
 		sendInitEvent();
 	}
 }
@@ -1120,79 +1084,12 @@ async function performAuthentication(this: Socket, data: AuthPerformData) {
 	}
 
 	if (Config.values.openid.enable && "password" in data) {
-		const clientIp = colors.bold(getClientIp(socket));
-		log.debug(`OpenID: Processing callback from ${clientIp}`);
+		const result = await Auth.handleCallback?.(socket.id, data.password as string);
 
-		try {
-			const tokenSet = await openidClient.callback(
-				Config.values.openid.baseURL,
-				openidClient.callbackParams(data.password as string),
-				{code_verifier, state}
-			);
-			log.debug(`OpenID: Token exchange successful from ${clientIp}`);
-
-			const userinfo = await openidClient.userinfo(tokenSet);
-			log.debug(
-				`OpenID: Retrieved userinfo from ${clientIp}, claims: [${Object.keys(userinfo).join(
-					", "
-				)}]`
-			);
-
-			const usernameClaim = Config.values.openid.usernameClaim;
-			const extractedUsername = userinfo[usernameClaim];
-
-			if (!extractedUsername || typeof extractedUsername !== "string") {
-				log.warn(
-					`OpenID: Username claim '${usernameClaim}' not found or invalid from ${clientIp}. ` +
-						`Available claims: [${Object.keys(userinfo).join(", ")}]`
-				);
-				data.user = "";
-				data.password = "";
-			} else {
-				data.user = extractedUsername;
-				log.debug(
-					`OpenID: Extracted username '${data.user}' from claim '${usernameClaim}'`
-				);
-			}
-
-			if (Config.values.openid.roleClaim !== "") {
-				const availabeRoles = _.get(userinfo, Config.values.openid.roleClaim) as string[];
-				const requiredRoles = Config.values.openid.requiredRoles;
-				const userAuthorized = requiredRoles.every((element) =>
-					availabeRoles.includes(element)
-				);
-
-				if (!userAuthorized) {
-					log.warn(
-						`OpenID: User '${data.user}' from ${clientIp} lacks required roles: ` +
-							`has [${availabeRoles.join(", ")}], needs [${requiredRoles.join(", ")}]`
-					);
-					data.user = "";
-					data.password = "";
-				}
-			}
-
-			// Store id_token for front-channel logout
-			pendingIdToken = tokenSet.id_token;
-		} catch (e) {
-			if (e instanceof errors.OPError) {
-				log.warn(
-					`OpenID provider error from ${clientIp}: ${e.error} (${
-						e.error_description || "no description"
-					})`
-				);
-			} else if (e instanceof errors.RPError) {
-				log.warn(`OpenID validation error from ${clientIp}: ${e.message}`);
-			} else if (e instanceof Error && "code" in e) {
-				log.warn(
-					`OpenID provider unreachable from ${clientIp}: ${
-						(e as NodeJS.ErrnoException).code
-					}`
-				);
-			} else {
-				log.warn(`OpenID authentication failed from ${clientIp}: ${String(e)}`);
-			}
-
+		if (result) {
+			data.user = result.username;
+			socket.data.pendingIdToken = result.idToken;
+		} else {
 			data.user = "";
 			data.password = "";
 		}
