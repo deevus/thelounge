@@ -132,8 +132,92 @@ function getAuthUrl(socketId: string): string | null {
 	});
 }
 
-async function handleCallback(_socketId: string, _params: string): Promise<CallbackResult | null> {
-	return null;
+async function handleCallback(
+	socketId: string,
+	params: string
+): Promise<CallbackResult | null> {
+	if (!initialized || !openidClient) {
+		log.warn("OpenID: Cannot handle callback - not initialized");
+		return null;
+	}
+
+	const socketState = socketStates.get(socketId);
+
+	if (!socketState) {
+		log.warn(`OpenID: No state found for socket ${socketId}`);
+		return null;
+	}
+
+	// Clean up state immediately (single use)
+	socketStates.delete(socketId);
+
+	try {
+		const tokenSet = await openidClient.callback(
+			Config.values.openid.baseURL,
+			openidClient.callbackParams(params),
+			{
+				code_verifier: socketState.codeVerifier,
+				state: socketState.state,
+			}
+		);
+
+		log.debug(`OpenID: Token exchange successful for socket ${socketId}`);
+
+		const userinfo = await openidClient.userinfo(tokenSet);
+		log.debug(
+			`OpenID: Retrieved userinfo, claims: [${Object.keys(userinfo).join(", ")}]`
+		);
+
+		const usernameClaim = Config.values.openid.usernameClaim;
+		const extractedUsername = userinfo[usernameClaim];
+
+		if (!extractedUsername || typeof extractedUsername !== "string") {
+			log.warn(
+				`OpenID: Username claim '${usernameClaim}' not found or invalid. ` +
+					`Available claims: [${Object.keys(userinfo).join(", ")}]`
+			);
+			return null;
+		}
+
+		// Role-based authorization
+		if (Config.values.openid.roleClaim !== "") {
+			const availableRoles =
+				(userinfo[Config.values.openid.roleClaim] as string[]) || [];
+			const requiredRoles = Config.values.openid.requiredRoles;
+			const userAuthorized = requiredRoles.every((role) =>
+				availableRoles.includes(role)
+			);
+
+			if (!userAuthorized) {
+				log.warn(
+					`OpenID: User '${extractedUsername}' lacks required roles: ` +
+						`has [${availableRoles.join(", ")}], needs [${requiredRoles.join(", ")}]`
+				);
+				return null;
+			}
+		}
+
+		return {
+			username: extractedUsername,
+			idToken: tokenSet.id_token,
+		};
+	} catch (e) {
+		if (e instanceof errors.OPError) {
+			log.warn(
+				`OpenID: Provider error - ${e.error} (${e.error_description || "no description"})`
+			);
+		} else if (e instanceof errors.RPError) {
+			log.warn(`OpenID: Validation error - ${e.message}`);
+		} else if (e instanceof Error && "code" in e) {
+			log.warn(
+				`OpenID: Provider unreachable - ${(e as NodeJS.ErrnoException).code}`
+			);
+		} else {
+			log.warn(`OpenID: Authentication failed - ${String(e)}`);
+		}
+
+		return null;
+	}
 }
 
 function buildLogoutUrl(_idToken?: string): string | undefined {
