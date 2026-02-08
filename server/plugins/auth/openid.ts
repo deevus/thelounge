@@ -20,6 +20,7 @@ let openidClient: BaseClient | null = null;
 let initialized = false;
 
 // TTL sweep using setTimeout self-scheduling pattern
+// Uses .unref() to not keep Node.js process alive for tests
 function scheduleSweep() {
 	setTimeout(() => {
 		const now = Date.now();
@@ -32,7 +33,7 @@ function scheduleSweep() {
 		}
 
 		scheduleSweep();
-	}, 5 * 60 * 1000);
+	}, 5 * 60 * 1000).unref();
 }
 
 // Start sweep on module load
