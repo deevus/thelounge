@@ -10,12 +10,12 @@ OpenID-specific logic is inlined directly into `server/server.ts` instead of bei
 
 ### Current Violations
 
-| File | Lines | Issue |
-|------|-------|-------|
-| server/server.ts | 68-79 | OpenID client/issuer variables at module level |
-| server/server.ts | 116-139 | Direct OpenID issuer discovery and client setup |
-| server/server.ts | 279-283 | OpenID data added to auth:start event |
-| server/server.ts | 857-871 | OpenID logout URL building |
+| File             | Lines     | Issue                                             |
+| ---------------- | --------- | ------------------------------------------------- |
+| server/server.ts | 68-79     | OpenID client/issuer variables at module level    |
+| server/server.ts | 116-139   | Direct OpenID issuer discovery and client setup   |
+| server/server.ts | 279-283   | OpenID data added to auth:start event             |
+| server/server.ts | 857-871   | OpenID logout URL building                        |
 | server/server.ts | 1122-1199 | OpenID callback handling in performAuthentication |
 
 ### Security Issues in Current Implementation
@@ -52,13 +52,13 @@ export default {
 
 ### Method Descriptions
 
-| Method | Purpose |
-|--------|---------|
-| `initialize()` | Discover issuer, create OIDC client. Returns `false` on failure. |
-| `getAuthUrl(socketId)` | Generate PKCE values, store in state map, return authorization URL. |
+| Method                             | Purpose                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `initialize()`                     | Discover issuer, create OIDC client. Returns `false` on failure.                    |
+| `getAuthUrl(socketId)`             | Generate PKCE values, store in state map, return authorization URL.                 |
 | `handleCallback(socketId, params)` | Exchange code for tokens, validate claims/roles, return username + idToken or null. |
-| `buildLogoutUrl(idToken)` | Build end_session_endpoint URL with id_token_hint. |
-| `cleanup(socketId)` | Remove socket from state map (called on disconnect). |
+| `buildLogoutUrl(idToken)`          | Build end_session_endpoint URL with id_token_hint.                                  |
+| `cleanup(socketId)`                | Remove socket from state map (called on disconnect).                                |
 
 ## Internal State Management
 
@@ -118,14 +118,14 @@ Add TypeScript types for optional OpenID methods to enable type checking.
 
 ### Removals
 
-| Lines | What | Replacement |
-|-------|------|-------------|
-| 22 | `openid-client` import | (moved to plugin) |
-| 68-79 | Module globals | Local `idToken` in `performAuthentication` |
-| 116-139 | Inline initialization | `await Auth.initialize()` |
-| 282 | `issuerURL` | `Auth.getAuthUrl?.(socket.id)` |
-| 857-871 | Logout URL building | `Auth.buildLogoutUrl?.(idToken)` |
-| 1122-1199 | Callback handling | `await Auth.handleCallback?.(socket.id, ...)` |
+| Lines     | What                   | Replacement                                   |
+| --------- | ---------------------- | --------------------------------------------- |
+| 22        | `openid-client` import | (moved to plugin)                             |
+| 68-79     | Module globals         | Local `idToken` in `performAuthentication`    |
+| 116-139   | Inline initialization  | `await Auth.initialize()`                     |
+| 282       | `issuerURL`            | `Auth.getAuthUrl?.(socket.id)`                |
+| 857-871   | Logout URL building    | `Auth.buildLogoutUrl?.(idToken)`              |
+| 1122-1199 | Callback handling      | `await Auth.handleCallback?.(socket.id, ...)` |
 
 ### Additions
 
@@ -173,18 +173,18 @@ Following existing auth plugin pattern:
 
 ## File Changes
 
-| File | Change |
-|------|--------|
+| File                            | Change                                                 |
+| ------------------------------- | ------------------------------------------------------ |
 | `server/plugins/auth/openid.ts` | Expand from ~41 to ~150 lines with full OIDC lifecycle |
-| `server/plugins/auth.ts` | Add TypeScript types for optional OpenID methods |
-| `server/server.ts` | Remove OpenID imports/globals, delegate to Auth module |
+| `server/plugins/auth.ts`        | Add TypeScript types for optional OpenID methods       |
+| `server/server.ts`              | Remove OpenID imports/globals, delegate to Auth module |
 
 No new files needed.
 
 ## Security Improvements
 
-| Issue | Before | After |
-|-------|--------|-------|
-| PKCE values | Single global, reused for all | Per-socket, fresh each auth |
-| pendingIdToken | Global with race condition | Local to function scope |
-| State cleanup | None | Disconnect handler + TTL sweep |
+| Issue          | Before                        | After                          |
+| -------------- | ----------------------------- | ------------------------------ |
+| PKCE values    | Single global, reused for all | Per-socket, fresh each auth    |
+| pendingIdToken | Global with race condition    | Local to function scope        |
+| State cleanup  | None                          | Disconnect handler + TTL sweep |

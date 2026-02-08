@@ -132,10 +132,7 @@ function getAuthUrl(socketId: string): string | null {
 	});
 }
 
-async function handleCallback(
-	socketId: string,
-	params: string
-): Promise<CallbackResult | null> {
+async function handleCallback(socketId: string, params: string): Promise<CallbackResult | null> {
 	if (!initialized || !openidClient) {
 		log.warn("OpenID: Cannot handle callback - not initialized");
 		return null;
@@ -164,9 +161,7 @@ async function handleCallback(
 		log.debug(`OpenID: Token exchange successful for socket ${socketId}`);
 
 		const userinfo = await openidClient.userinfo(tokenSet);
-		log.debug(
-			`OpenID: Retrieved userinfo, claims: [${Object.keys(userinfo).join(", ")}]`
-		);
+		log.debug(`OpenID: Retrieved userinfo, claims: [${Object.keys(userinfo).join(", ")}]`);
 
 		const usernameClaim = Config.values.openid.usernameClaim;
 		const extractedUsername = userinfo[usernameClaim];
@@ -181,12 +176,9 @@ async function handleCallback(
 
 		// Role-based authorization
 		if (Config.values.openid.roleClaim !== "") {
-			const availableRoles =
-				(userinfo[Config.values.openid.roleClaim] as string[]) || [];
+			const availableRoles = (userinfo[Config.values.openid.roleClaim] as string[]) || [];
 			const requiredRoles = Config.values.openid.requiredRoles;
-			const userAuthorized = requiredRoles.every((role) =>
-				availableRoles.includes(role)
-			);
+			const userAuthorized = requiredRoles.every((role) => availableRoles.includes(role));
 
 			if (!userAuthorized) {
 				log.warn(
@@ -209,9 +201,7 @@ async function handleCallback(
 		} else if (e instanceof errors.RPError) {
 			log.warn(`OpenID: Validation error - ${e.message}`);
 		} else if (e instanceof Error && "code" in e) {
-			log.warn(
-				`OpenID: Provider unreachable - ${(e as NodeJS.ErrnoException).code}`
-			);
+			log.warn(`OpenID: Provider unreachable - ${(e as NodeJS.ErrnoException).code}`);
 		} else {
 			log.warn(`OpenID: Authentication failed - ${String(e)}`);
 		}
