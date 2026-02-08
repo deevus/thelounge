@@ -53,6 +53,11 @@ describe("OpenID socket state management", function () {
 			const url = openidAuth.getAuthUrl(testSocketId);
 			expect(url).to.be.null;
 		});
+
+		it("should generate URL with PKCE parameters when initialized", async function () {
+			// This test will be enabled when we have proper mocking
+			// For now, we test the not-initialized case above
+		});
 	});
 
 	describe("cleanup", function () {

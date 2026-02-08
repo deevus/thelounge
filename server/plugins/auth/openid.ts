@@ -104,14 +104,35 @@ async function initialize(): Promise<boolean> {
 	}
 }
 
-function getAuthUrl(_socketId: string): string | null {
-	return null;
+function getAuthUrl(socketId: string): string | null {
+	if (!initialized || !openidClient) {
+		log.debug("OpenID: Cannot generate auth URL - not initialized");
+		return null;
+	}
+
+	// Generate fresh PKCE values for this socket
+	const codeVerifier = generators.codeVerifier();
+	const codeChallenge = generators.codeChallenge(codeVerifier);
+	const state = generators.state();
+
+	// Store state for callback validation
+	socketStates.set(socketId, {
+		codeVerifier,
+		state,
+		createdAt: Date.now(),
+	});
+
+	log.debug(`OpenID: Generated auth URL for socket ${socketId}`);
+
+	return openidClient.authorizationUrl({
+		scope: "openid email profile",
+		code_challenge: codeChallenge,
+		code_challenge_method: "S256",
+		state,
+	});
 }
 
-async function handleCallback(
-	_socketId: string,
-	_params: string
-): Promise<CallbackResult | null> {
+async function handleCallback(_socketId: string, _params: string): Promise<CallbackResult | null> {
 	return null;
 }
 
