@@ -248,4 +248,31 @@ describe("OpenID authentication plugin", function () {
 			expect(openidAuth.isEnabled()).to.be.false;
 		});
 	});
+
+	describe("OpenID plugin interface", function () {
+		it("should export initialize method", function () {
+			expect(openidAuth).to.have.property("initialize");
+			expect(openidAuth.initialize).to.be.a("function");
+		});
+
+		it("should export getAuthUrl method", function () {
+			expect(openidAuth).to.have.property("getAuthUrl");
+			expect(openidAuth.getAuthUrl).to.be.a("function");
+		});
+
+		it("should export handleCallback method", function () {
+			expect(openidAuth).to.have.property("handleCallback");
+			expect(openidAuth.handleCallback).to.be.a("function");
+		});
+
+		it("should export buildLogoutUrl method", function () {
+			expect(openidAuth).to.have.property("buildLogoutUrl");
+			expect(openidAuth.buildLogoutUrl).to.be.a("function");
+		});
+
+		it("should export cleanup method", function () {
+			expect(openidAuth).to.have.property("cleanup");
+			expect(openidAuth.cleanup).to.be.a("function");
+		});
+	});
 });

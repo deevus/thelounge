@@ -33,8 +33,43 @@ function isOpenIDEnabled() {
 	return !Config.values.public && Config.values.openid.enable;
 }
 
+// Types for callback result
+export interface CallbackResult {
+	username: string;
+	idToken?: string;
+}
+
+// Stub implementations - will be filled in subsequent tasks
+async function initialize(): Promise<boolean> {
+	return false;
+}
+
+function getAuthUrl(_socketId: string): string | null {
+	return null;
+}
+
+async function handleCallback(
+	_socketId: string,
+	_params: string
+): Promise<CallbackResult | null> {
+	return null;
+}
+
+function buildLogoutUrl(_idToken?: string): string | undefined {
+	return undefined;
+}
+
+function cleanup(_socketId: string): void {
+	// no-op stub
+}
+
 export default {
 	moduleName: "openid",
 	auth: openIDAuth,
 	isEnabled: isOpenIDEnabled,
+	initialize,
+	getAuthUrl,
+	handleCallback,
+	buildLogoutUrl,
+	cleanup,
 };
