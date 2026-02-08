@@ -74,9 +74,34 @@ export interface CallbackResult {
 	idToken?: string;
 }
 
-// Stub implementations - will be filled in subsequent tasks
 async function initialize(): Promise<boolean> {
-	return false;
+	if (!Config.values.openid.enable) {
+		log.debug("OpenID: Disabled in configuration");
+		return false;
+	}
+
+	if (initialized) {
+		log.debug("OpenID: Already initialized");
+		return true;
+	}
+
+	try {
+		issuer = await Issuer.discover(Config.values.openid.issuerURL);
+		log.info(`OpenID: Discovered issuer ${issuer.metadata.issuer}`);
+
+		openidClient = new issuer.Client({
+			client_id: Config.values.openid.clientID,
+			client_secret: Config.values.openid.secret,
+			redirect_uris: [Config.values.openid.baseURL],
+			response_types: ["code"],
+		});
+
+		initialized = true;
+		return true;
+	} catch (err) {
+		log.error(`OpenID: Failed to initialize - ${(err as Error).message}`);
+		return false;
+	}
 }
 
 function getAuthUrl(_socketId: string): string | null {

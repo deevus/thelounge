@@ -1,5 +1,44 @@
 import {expect} from "chai";
+import sinon from "ts-sinon";
 import openidAuth from "../../../server/plugins/auth/openid";
+import Config from "../../../server/config";
+import log from "../../../server/log";
+
+describe("OpenID initialize", function () {
+	let originalOpenidConfig: typeof Config.values.openid;
+	let logInfoStub: sinon.SinonStub;
+	let logErrorStub: sinon.SinonStub;
+	let logDebugStub: sinon.SinonStub;
+
+	beforeEach(function () {
+		originalOpenidConfig = {...Config.values.openid};
+		logInfoStub = sinon.stub(log, "info");
+		logErrorStub = sinon.stub(log, "error");
+		logDebugStub = sinon.stub(log, "debug");
+	});
+
+	afterEach(function () {
+		Config.values.openid = originalOpenidConfig;
+		logInfoStub.restore();
+		logErrorStub.restore();
+		logDebugStub.restore();
+	});
+
+	it("should return false when OpenID is disabled", async function () {
+		Config.values.openid.enable = false;
+		const result = await openidAuth.initialize();
+		expect(result).to.be.false;
+	});
+
+	it("should return false when issuer discovery fails", async function () {
+		Config.values.openid.enable = true;
+		Config.values.openid.issuerURL = "https://invalid.example.com";
+
+		const result = await openidAuth.initialize();
+		expect(result).to.be.false;
+		sinon.assert.called(logErrorStub);
+	});
+});
 
 describe("OpenID socket state management", function () {
 	const testSocketId = "test-socket-123";
