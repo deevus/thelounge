@@ -245,6 +245,14 @@ function cleanup(socketId: string): void {
 	}
 }
 
+// For testing only - resets module state
+function _resetForTesting(): void {
+	socketStates.clear();
+	issuer = null;
+	openidClient = null;
+	initialized = false;
+}
+
 export default {
 	moduleName: "openid",
 	auth: openIDAuth,
@@ -254,4 +262,5 @@ export default {
 	handleCallback,
 	buildLogoutUrl,
 	cleanup,
+	_resetForTesting,
 };

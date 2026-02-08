@@ -11,6 +11,7 @@ describe("OpenID initialize", function () {
 	let logDebugStub: sinon.SinonStub;
 
 	beforeEach(function () {
+		openidAuth._resetForTesting();
 		originalOpenidConfig = {...Config.values.openid};
 		logInfoStub = sinon.stub(log, "info");
 		logErrorStub = sinon.stub(log, "error");
@@ -42,6 +43,10 @@ describe("OpenID initialize", function () {
 
 describe("OpenID socket state management", function () {
 	const testSocketId = "test-socket-123";
+
+	beforeEach(function () {
+		openidAuth._resetForTesting();
+	});
 
 	afterEach(function () {
 		// Clean up after each test
@@ -96,6 +101,7 @@ describe("OpenID buildLogoutUrl", function () {
 	let originalLogout: boolean;
 
 	beforeEach(function () {
+		openidAuth._resetForTesting();
 		originalLogout = Config.values.openid.logout;
 	});
 
