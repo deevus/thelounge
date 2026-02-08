@@ -3,6 +3,9 @@ import Client from "../client";
 import ClientManager from "../clientManager";
 import log from "../log";
 
+// Re-export types from auth plugins
+export type {CallbackResult} from "./auth/openid";
+
 export type AuthHandler = (
 	manager: ClientManager,
 	client: Client,
