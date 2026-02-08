@@ -2,6 +2,41 @@ import log from "../../log";
 import Config from "../../config";
 import ClientManager from "../../clientManager";
 import Client from "../../client";
+import {Issuer, generators, errors, BaseClient} from "openid-client";
+
+// Per-socket PKCE state
+interface SocketState {
+	codeVerifier: string;
+	state: string;
+	createdAt: number;
+}
+
+const socketStates = new Map<string, SocketState>();
+const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// OIDC client - set during initialize()
+let issuer: Issuer | null = null;
+let openidClient: BaseClient | null = null;
+let initialized = false;
+
+// TTL sweep using setTimeout self-scheduling pattern
+function scheduleSweep() {
+	setTimeout(() => {
+		const now = Date.now();
+
+		for (const [socketId, state] of socketStates) {
+			if (now - state.createdAt > STATE_TTL_MS) {
+				socketStates.delete(socketId);
+				log.debug(`OpenID: Cleaned up stale state for socket ${socketId}`);
+			}
+		}
+
+		scheduleSweep();
+	}, 5 * 60 * 1000);
+}
+
+// Start sweep on module load
+scheduleSweep();
 
 function openIDAuth(
 	manager: ClientManager,
@@ -59,8 +94,11 @@ function buildLogoutUrl(_idToken?: string): string | undefined {
 	return undefined;
 }
 
-function cleanup(_socketId: string): void {
-	// no-op stub
+function cleanup(socketId: string): void {
+	if (socketStates.has(socketId)) {
+		socketStates.delete(socketId);
+		log.debug(`OpenID: Cleaned up state for socket ${socketId}`);
+	}
 }
 
 export default {
