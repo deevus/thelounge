@@ -91,3 +91,27 @@ describe("OpenID socket state management", function () {
 		});
 	});
 });
+
+describe("OpenID buildLogoutUrl", function () {
+	let originalLogout: boolean;
+
+	beforeEach(function () {
+		originalLogout = Config.values.openid.logout;
+	});
+
+	afterEach(function () {
+		Config.values.openid.logout = originalLogout;
+	});
+
+	it("should return undefined when logout is disabled", function () {
+		Config.values.openid.logout = false;
+		const url = openidAuth.buildLogoutUrl("test-id-token");
+		expect(url).to.be.undefined;
+	});
+
+	it("should return undefined when not initialized", function () {
+		Config.values.openid.logout = true;
+		const url = openidAuth.buildLogoutUrl("test-id-token");
+		expect(url).to.be.undefined;
+	});
+});

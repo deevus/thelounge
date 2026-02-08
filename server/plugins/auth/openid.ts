@@ -220,8 +220,22 @@ async function handleCallback(
 	}
 }
 
-function buildLogoutUrl(_idToken?: string): string | undefined {
-	return undefined;
+function buildLogoutUrl(idToken?: string): string | undefined {
+	if (!Config.values.openid.logout) {
+		return undefined;
+	}
+
+	if (!initialized || !issuer?.metadata?.end_session_endpoint) {
+		return undefined;
+	}
+
+	const endSessionEndpoint = issuer.metadata.end_session_endpoint as string;
+
+	if (idToken) {
+		return `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(idToken)}`;
+	}
+
+	return endSessionEndpoint;
 }
 
 function cleanup(socketId: string): void {
