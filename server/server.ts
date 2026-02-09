@@ -876,12 +876,22 @@ function initializeClient(
 			token = client.calculateTokenHash(newToken);
 			client.attachedClients[socket.id].token = token;
 
-			client.updateSession(token, getClientIp(socket), socket.request, socket.data.pendingIdToken);
+			client.updateSession(
+				token,
+				getClientIp(socket),
+				socket.request,
+				socket.data.pendingIdToken
+			);
 			socket.data.pendingIdToken = undefined; // Clear after use
 			sendInitEvent(newToken);
 		});
 	} else {
-		client.updateSession(token, getClientIp(socket), socket.request, socket.data.pendingIdToken);
+		client.updateSession(
+			token,
+			getClientIp(socket),
+			socket.request,
+			socket.data.pendingIdToken
+		);
 		socket.data.pendingIdToken = undefined; // Clear after use
 		sendInitEvent();
 	}

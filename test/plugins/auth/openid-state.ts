@@ -71,6 +71,7 @@ describe("OpenID socket state management", function () {
 
 		it("should log debug message when not initialized", function () {
 			const logDebugStub = sinon.stub(log, "debug");
+
 			try {
 				openidAuth.getAuthUrl(testSocketId);
 				sinon.assert.calledWith(

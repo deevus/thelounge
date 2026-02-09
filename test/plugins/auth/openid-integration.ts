@@ -65,7 +65,9 @@ describe("OpenID plugin integration", function () {
 
 		beforeEach(function () {
 			mockClient = {
-				authorizationUrl: sinon.stub().returns("https://auth.example.com/authorize?code=test"),
+				authorizationUrl: sinon
+					.stub()
+					.returns("https://auth.example.com/authorize?code=test"),
 				callback: sinon.stub(),
 				callbackParams: sinon.stub().returns({code: "test-code", state: "test-state"}),
 				userinfo: sinon.stub(),
@@ -141,7 +143,10 @@ describe("OpenID plugin integration", function () {
 			openidAuth.getAuthUrl("socket-123");
 
 			mockClient.callback.resolves({id_token: "test-id-token"});
-			mockClient.userinfo.resolves({preferred_username: "testuser", email: "test@example.com"});
+			mockClient.userinfo.resolves({
+				preferred_username: "testuser",
+				email: "test@example.com",
+			});
 
 			const result = await openidAuth.handleCallback("socket-123", "code=abc&state=xyz");
 
